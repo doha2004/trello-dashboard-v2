@@ -28,8 +28,9 @@ from services.mapper import map_cards_to_dataframe
 from services.trello_api import TrelloAPIError, cached_fetch_cards_in_range
 
 # ── BRAND ASSETS ───────────────────────────────────────────────
-ASSETS_DIR = Path(__file__).parent / "assets"
-LOGO_PATH = ASSETS_DIR / "klem_group_logo.png"
+# Logo lives right next to app.py (not in a subfolder).
+APP_DIR = Path(__file__).parent
+LOGO_PATH = APP_DIR / "klem_group_logo.png"
 
 
 @st.cache_data(show_spinner=False)
@@ -513,21 +514,31 @@ show_tables = view_mode == "Tables only"
 
 # ── HEADER ────────────────────────────────────────────────────
 _logo_html = f'<img src="data:image/png;base64,{_LOGO_B64}" alt="KLEM Group" />' if _LOGO_B64 else ""
-st.markdown(
-    f"""
-<div class="app-header">
-    {_logo_html}
-    <div class="app-header-divider"></div>
-    <div>
-        <div class="app-header-title">Creative Operations Dashboard</div>
-        <div class="app-header-sub">
-            {start_date} — {end_date} &nbsp;·&nbsp; Agency: {selected_agency} &nbsp;·&nbsp; Cards loaded: {len(raw_cards)}
-        </div>
-    </div>
-</div>
-""",
-    unsafe_allow_html=True,
+_header_sub = (
+    f"{start_date} — {end_date} &nbsp;&middot;&nbsp; "
+    f"Agency: {selected_agency} &nbsp;&middot;&nbsp; "
+    f"Cards loaded: {len(raw_cards)}"
 )
+# Built as a single flush-left string (no leading spaces, no blank lines):
+# indented HTML with a blank line in front of it gets treated as a Markdown
+# code block instead of raw HTML, which is exactly what happens if
+# `_logo_html` is empty and leaves a whitespace-only line.
+_header_html = (
+    '<div class="app-header">'
+    f'{_logo_html}'
+    '<div class="app-header-divider"></div>'
+    '<div>'
+    '<div class="app-header-title">Creative Operations Dashboard</div>'
+    f'<div class="app-header-sub">{_header_sub}</div>'
+    '</div>'
+    '</div>'
+)
+st.markdown(_header_html, unsafe_allow_html=True)
+
+if not _LOGO_B64:
+    st.caption(
+        "Logo not found — make sure klem_group_logo.png sits in the same folder as app.py."
+    )
 
 # ── METRIC CARDS ──────────────────────────────────────────────
 total = get_val("nbre de briefs")
@@ -540,16 +551,14 @@ cols = st.columns(4)
 
 
 def card(col, label, value, sub):
-    col.markdown(
-        f"""
-    <div class="metric-card">
-        <div class="metric-label">{label}</div>
-        <div class="metric-value">{value}</div>
-        <div class="metric-sub">{sub}</div>
-    </div>
-    """,
-        unsafe_allow_html=True,
+    html = (
+        '<div class="metric-card">'
+        f'<div class="metric-label">{label}</div>'
+        f'<div class="metric-value">{value}</div>'
+        f'<div class="metric-sub">{sub}</div>'
+        '</div>'
     )
+    col.markdown(html, unsafe_allow_html=True)
 
 
 card(cols[0], "Total Briefs", total, "cards in range")

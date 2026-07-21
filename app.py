@@ -27,13 +27,8 @@ from services.kpis import apply_filters, build_normalized_cards, compute_kpis
 from services.mapper import map_cards_to_dataframe
 from services.trello_api import TrelloAPIError, cached_fetch_cards_in_range
 
-# ── BRAND ASSETS ───────────────────────────────────────────────
-# Logo lives right next to app.py (not in a subfolder). The transparent
-# variant is used in the header so the (white-background) source logo
-# blends into the dark theme instead of showing a white box.
+# ── BRAND ASSET (logo only — everything else below is unchanged) ──
 APP_DIR = Path(__file__).parent
-LOGO_PATH = APP_DIR / "klem_group_logo.png"
-LOGO_TRANSPARENT_PATH = APP_DIR / "klem_group_logo_transparent.png"
 
 
 @st.cache_data(show_spinner=False)
@@ -42,20 +37,27 @@ def _load_logo_b64(path: str) -> str:
         return base64.b64encode(f.read()).decode("utf-8")
 
 
-_LOGO_B64 = _load_logo_b64(str(LOGO_PATH)) if LOGO_PATH.exists() else ""
-_LOGO_TRANSPARENT_B64 = (
-    _load_logo_b64(str(LOGO_TRANSPARENT_PATH)) if LOGO_TRANSPARENT_PATH.exists() else _LOGO_B64
-)
+def _first_existing_logo_b64() -> str:
+    # Prefer a transparent-background variant (looks better on the dark
+    # sidebar) if present, otherwise fall back to the plain logo file.
+    for name in ("klem_group_logo_transparent.png", "klem_group_logo.png"):
+        p = APP_DIR / name
+        if p.exists():
+            return _load_logo_b64(str(p))
+    return ""
+
+
+_LOGO_B64 = _first_existing_logo_b64()
 
 # ── PAGE CONFIG ───────────────────────────────────────────────
 st.set_page_config(
-    page_title="KLEM Group · Creative Operations Dashboard",
-    page_icon=str(LOGO_PATH) if LOGO_PATH.exists() else None,
+    page_title="Traffic Studio · KPIs",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── STYLES — your original dark theme, restored ───────────────
+# ── STYLES (unchanged from the original dashboard) ────────────
 st.markdown(
     """
 <style>
@@ -68,8 +70,6 @@ html, body, [class*="css"] {
 }
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding: 2.5rem 4rem !important; max-width: 100% !important; }
-
-/* Sidebar */
 section[data-testid="stSidebar"] {
     background: #161B22 !important;
     border-right: 1px solid #21262D !important;
@@ -88,11 +88,8 @@ section[data-testid="stSidebar"] .stMarkdown {
     opacity: 1 !important;
 }
 section[data-testid="stSidebar"] div[data-testid="stWidgetLabel"] > label {
-    color: #8B949E !important;
+    color: #FFFFFF !important;
     font-weight: 700 !important;
-    font-size: 0.8rem !important;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
     opacity: 1 !important;
 }
 section[data-testid="stSidebar"] div[role="radiogroup"] label {
@@ -104,48 +101,12 @@ section[data-testid="stSidebar"] div[role="radiogroup"] label p {
     font-weight: 600 !important;
     opacity: 1 !important;
 }
-.sidebar-caption {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    color: #8B949E;
-    margin: 1.4rem 0 0.4rem 0;
-}
-
-/* Header */
-.app-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding-bottom: 1.2rem;
-    margin-bottom: 1.6rem;
-    border-bottom: 1px solid #21262D;
-}
-.app-header img {
-    height: 38px;
-    width: auto;
-}
-.app-header-divider {
-    width: 1px;
-    height: 30px;
-    background: #21262D;
-}
-.app-header-title {
-    font-size: 2rem;
-    font-weight: 800;
+.page-title {
+    font-size: 3rem; font-weight: 800;
     background: linear-gradient(135deg, #58A6FF 0%, #BC8CFF 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    letter-spacing: -0.2px;
 }
-.app-header-sub {
-    font-size: 0.85rem;
-    color: #8B949E;
-    margin-top: 0.2rem;
-}
-
-/* Metric cards */
 .metric-card {
     background: #161B22;
     border: 1px solid #21262D;
@@ -169,8 +130,6 @@ section[data-testid="stSidebar"] div[role="radiogroup"] label p {
     color: #8B949E;
     margin-top: 0.2rem;
 }
-
-/* Section headers */
 .section-title {
     font-size: 0.72rem;
     font-weight: 700;
@@ -181,8 +140,6 @@ section[data-testid="stSidebar"] div[role="radiogroup"] label p {
     border-bottom: 1px solid #21262D;
     padding-bottom: 0.4rem;
 }
-
-/* Charts stay on white cards for readability of the colorful palette */
 div[data-testid="stPlotlyChart"] {
     background: #FFFFFF !important;
     border: 1px solid #D0D7DE !important;
@@ -190,12 +147,21 @@ div[data-testid="stPlotlyChart"] {
     padding: 10px 10px 4px 10px !important;
     box-shadow: 5px 6px 0px rgba(0, 0, 0, 0.65) !important;
 }
+.sidebar-logo {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.6rem;
+}
+.sidebar-logo img {
+    height: 34px;
+    width: auto;
+}
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-# ── CHART THEME ────────────────────────────────────────────────
+# ── CHART THEME (unchanged) ───────────────────────────────────
 CHART_LAYOUT = dict(
     paper_bgcolor="#FFFFFF",
     plot_bgcolor="#FFFFFF",
@@ -224,8 +190,13 @@ NO_DATA_MESSAGE = "No data for this selection."
 
 # ── PASSWORD ──────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown('<div class="sidebar-caption">Access</div>', unsafe_allow_html=True)
-    password = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Password")
+    if _LOGO_B64:
+        st.markdown(
+            f'<div class="sidebar-logo"><img src="data:image/png;base64,{_LOGO_B64}" alt="KLEM Group" /></div>',
+            unsafe_allow_html=True,
+        )
+    st.markdown("### Traffic Studio")
+    password = st.text_input("🔒 Password", type="password")
     if password != st.secrets.get("DASHBOARD_PASSWORD", "Rahma_KLEM@"):
         st.warning("Please enter the password to access the dashboard.")
         st.stop()
@@ -387,18 +358,17 @@ def split_dimension_column(data: pd.DataFrame, source_col="dimension", into=("Ty
 ALL_MEMBERS = sorted(m for members in RESOURCES.values() for m in members)
 
 with st.sidebar:
-    st.markdown('<div class="sidebar-caption">Reporting Period</div>', unsafe_allow_html=True)
+    st.markdown("---")
     today = date.today()
     default_start = today - timedelta(days=7)
 
-    start_date = st.date_input("Start Date", value=default_start)
-    end_date = st.date_input("End Date", value=today)
+    start_date = st.date_input("📅 Start Date", value=default_start)
+    end_date = st.date_input("📅 End Date", value=today)
 
-    st.markdown('<div class="sidebar-caption">Filters</div>', unsafe_allow_html=True)
     agencies_opt = ["All", "klem", "id36"]
-    selected_agency = st.selectbox("Agency", agencies_opt)
+    selected_agency = st.selectbox("🏢 Agency", agencies_opt)
 
-    with st.expander("More filters"):
+    with st.expander("More filters (optional)"):
         selected_studio = st.selectbox("Studio", ["All", "studio klem", "studio id36"])
         selected_client = st.text_input("Client (exact name)", value="")
         selected_member = st.selectbox("Member", ["All"] + ALL_MEMBERS)
@@ -406,8 +376,8 @@ with st.sidebar:
             "Status", ["All", "To do", "In progress", "Done", "In review", "Approved", "Not sure"]
         )
 
-    st.markdown('<div class="sidebar-caption">View</div>', unsafe_allow_html=True)
-    view_mode = st.radio("Display", ["Charts only", "Tables only"], label_visibility="collapsed")
+    st.markdown("---")
+    view_mode = st.radio("📊 Display", ["Charts only", "Tables only"])
 
     if start_date > end_date:
         st.error("Start Date must be before End Date.")
@@ -491,36 +461,12 @@ show_charts = view_mode == "Charts only"
 show_tables = view_mode == "Tables only"
 
 # ── HEADER ────────────────────────────────────────────────────
-_logo_html = (
-    f'<img src="data:image/png;base64,{_LOGO_TRANSPARENT_B64}" alt="KLEM Group" />'
-    if _LOGO_TRANSPARENT_B64
-    else ""
+st.markdown('<div class="page-title">📊 KPI Dashboard</div>', unsafe_allow_html=True)
+st.markdown(
+    f"**Period:** {start_date} → {end_date} &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"**Agency:** {selected_agency} &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"**Cards loaded:** {len(raw_cards)}"
 )
-_header_sub = (
-    f"{start_date} — {end_date} &nbsp;&middot;&nbsp; "
-    f"Agency: {selected_agency} &nbsp;&middot;&nbsp; "
-    f"Cards loaded: {len(raw_cards)}"
-)
-# Built as a single flush-left string (no leading spaces, no blank lines):
-# indented HTML with a blank line in front of it gets treated as a Markdown
-# code block instead of raw HTML, which is exactly what happens if
-# `_logo_html` is empty and leaves a whitespace-only line.
-_header_html = (
-    '<div class="app-header">'
-    f'{_logo_html}'
-    '<div class="app-header-divider"></div>'
-    '<div>'
-    '<div class="app-header-title">Creative Operations Dashboard</div>'
-    f'<div class="app-header-sub">{_header_sub}</div>'
-    '</div>'
-    '</div>'
-)
-st.markdown(_header_html, unsafe_allow_html=True)
-
-if not _LOGO_TRANSPARENT_B64:
-    st.caption(
-        "Logo not found — make sure klem_group_logo.png sits in the same folder as app.py."
-    )
 
 # ── METRIC CARDS ──────────────────────────────────────────────
 total = get_val("nbre de briefs")
@@ -533,14 +479,16 @@ cols = st.columns(4)
 
 
 def card(col, label, value, sub):
-    html = (
-        '<div class="metric-card">'
-        f'<div class="metric-label">{label}</div>'
-        f'<div class="metric-value">{value}</div>'
-        f'<div class="metric-sub">{sub}</div>'
-        '</div>'
+    col.markdown(
+        f"""
+    <div class="metric-card">
+        <div class="metric-label">{label}</div>
+        <div class="metric-value">{value}</div>
+        <div class="metric-sub">{sub}</div>
+    </div>
+    """,
+        unsafe_allow_html=True,
     )
-    col.markdown(html, unsafe_allow_html=True)
 
 
 card(cols[0], "Total Briefs", total, "cards in range")

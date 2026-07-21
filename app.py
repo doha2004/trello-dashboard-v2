@@ -12,7 +12,9 @@ powered dashboard. No n8n, no Google Sheets, no intermediate storage.
 
 from __future__ import annotations
 
+import base64
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
@@ -25,30 +27,56 @@ from services.kpis import apply_filters, build_normalized_cards, compute_kpis
 from services.mapper import map_cards_to_dataframe
 from services.trello_api import TrelloAPIError, cached_fetch_cards_in_range
 
+# ── BRAND ASSETS ───────────────────────────────────────────────
+ASSETS_DIR = Path(__file__).parent / "assets"
+LOGO_PATH = ASSETS_DIR / "klem_group_logo.png"
+
+
+@st.cache_data(show_spinner=False)
+def _load_logo_b64(path: str) -> str:
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+
+_LOGO_B64 = _load_logo_b64(str(LOGO_PATH)) if LOGO_PATH.exists() else ""
+
 # ── PAGE CONFIG ───────────────────────────────────────────────
 st.set_page_config(
-    page_title="Traffic Studio · KPIs",
-    page_icon="📊",
+    page_title="KLEM Group · Creative Operations Dashboard",
+    page_icon=str(LOGO_PATH) if LOGO_PATH.exists() else None,
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── STYLES (unchanged from the original dashboard) ────────────
+# ── STYLES — enterprise / corporate theme ─────────────────────
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-app: #F4F5F7;
+    --bg-surface: #FFFFFF;
+    --bg-sidebar: #FFFFFF;
+    --border-color: #E2E4E9;
+    --text-primary: #1B1F27;
+    --text-secondary: #6B7280;
+    --accent: #9C7430;
+    --accent-soft: #F1E7D6;
+}
 
 html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif !important;
-    background-color: #0D1117 !important;
-    color: #C9D1D9 !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    background-color: var(--bg-app) !important;
+    color: var(--text-primary) !important;
 }
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding: 2.5rem 4rem !important; max-width: 100% !important; }
+.block-container { padding: 2rem 3rem 3rem 3rem !important; max-width: 100% !important; }
+
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background: #161B22 !important;
-    border-right: 1px solid #21262D !important;
+    background: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--border-color) !important;
 }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
@@ -60,85 +88,145 @@ section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span,
 section[data-testid="stSidebar"] .stMarkdown {
-    color: #FFFFFF !important;
+    color: var(--text-primary) !important;
     opacity: 1 !important;
 }
 section[data-testid="stSidebar"] div[data-testid="stWidgetLabel"] > label {
-    color: #FFFFFF !important;
-    font-weight: 700 !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
     opacity: 1 !important;
 }
 section[data-testid="stSidebar"] div[role="radiogroup"] label {
-    color: #FFFFFF !important;
+    color: var(--text-primary) !important;
     opacity: 1 !important;
 }
 section[data-testid="stSidebar"] div[role="radiogroup"] label p {
-    color: #FFFFFF !important;
-    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
     opacity: 1 !important;
 }
-.page-title {
-    font-size: 3rem; font-weight: 800;
-    background: linear-gradient(135deg, #58A6FF 0%, #BC8CFF 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+section[data-testid="stSidebar"] .stTextInput input,
+section[data-testid="stSidebar"] .stDateInput input,
+section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
+    border-radius: 6px !important;
 }
-.metric-card {
-    background: #161B22;
-    border: 1px solid #21262D;
-    border-radius: 12px;
-    padding: 1.4rem 1.6rem;
-}
-.metric-label {
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #8B949E;
-}
-.metric-value {
-    font-size: 3.4rem;
-    font-weight: 800;
-    font-family: 'DM Mono', monospace;
-    color: #FFFFFF;
-}
-.metric-sub {
-    font-size: 0.85rem;
-    color: #8B949E;
-    margin-top: 0.2rem;
-}
-.section-title {
+.sidebar-caption {
     font-size: 0.72rem;
     font-weight: 700;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #8B949E;
-    margin: 2.5rem 0 1rem 0;
-    border-bottom: 1px solid #21262D;
-    padding-bottom: 0.4rem;
+    color: var(--text-secondary);
+    margin: 1.4rem 0 0.4rem 0;
 }
+
+/* Header */
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1.2rem;
+    margin-bottom: 1.6rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.app-header img {
+    height: 34px;
+    width: auto;
+}
+.app-header-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--border-color);
+}
+.app-header-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+}
+.app-header-sub {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+}
+
+/* Metric cards */
+.metric-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+}
+.metric-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+}
+.metric-value {
+    font-size: 2.4rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    margin-top: 0.15rem;
+}
+.metric-sub {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+}
+
+/* Section headers */
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    margin: 2.2rem 0 0.9rem 0;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+/* Charts */
 div[data-testid="stPlotlyChart"] {
-    background: #FFFFFF !important;
-    border: 1px solid #D0D7DE !important;
-    border-radius: 14px !important;
-    padding: 10px 10px 4px 10px !important;
-    box-shadow: 5px 6px 0px rgba(0, 0, 0, 0.65) !important;
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    padding: 12px 14px 8px 14px !important;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05) !important;
+}
+
+/* Tables */
+div[data-testid="stDataFrame"] {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+}
+
+/* Buttons / inputs */
+.stButton > button, .stDownloadButton > button {
+    border-radius: 6px !important;
+    font-weight: 600 !important;
 }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-# ── CHART THEME (unchanged) ───────────────────────────────────
+# ── CHART THEME ────────────────────────────────────────────────
 CHART_LAYOUT = dict(
     paper_bgcolor="#FFFFFF",
     plot_bgcolor="#FFFFFF",
-    font=dict(family="DM Sans", color="#111111", size=12),
+    font=dict(family="Inter", color="#1B1F27", size=12),
     margin=dict(l=20, r=20, t=40, b=20),
-    legend=dict(bgcolor="#FFFFFF", bordercolor="#D0D7DE", borderwidth=1, font=dict(color="#111111")),
-    xaxis=dict(gridcolor="#E5E7EB", zerolinecolor="#D0D7DE", linecolor="#B8C0CC",
-               tickfont=dict(color="#111111"), title_font=dict(color="#111111")),
-    yaxis=dict(gridcolor="#E5E7EB", zerolinecolor="#D0D7DE", linecolor="#B8C0CC",
-               tickfont=dict(color="#111111"), title_font=dict(color="#111111")),
+    legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E4E9", borderwidth=1, font=dict(color="#1B1F27")),
+    xaxis=dict(gridcolor="#EEF0F3", zerolinecolor="#E2E4E9", linecolor="#D3D7DE",
+               tickfont=dict(color="#1B1F27"), title_font=dict(color="#1B1F27")),
+    yaxis=dict(gridcolor="#EEF0F3", zerolinecolor="#E2E4E9", linecolor="#D3D7DE",
+               tickfont=dict(color="#1B1F27"), title_font=dict(color="#1B1F27")),
 )
 
 USER_COLOR_LIST = [
@@ -157,8 +245,8 @@ NO_DATA_MESSAGE = "No data for this selection."
 
 # ── PASSWORD ──────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### Traffic Studio")
-    password = st.text_input("🔒 Password", type="password")
+    st.markdown('<div class="sidebar-caption">Access</div>', unsafe_allow_html=True)
+    password = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Password")
     if password != st.secrets.get("DASHBOARD_PASSWORD", "Rahma_KLEM@"):
         st.warning("Please enter the password to access the dashboard.")
         st.stop()
@@ -320,17 +408,18 @@ def split_dimension_column(data: pd.DataFrame, source_col="dimension", into=("Ty
 ALL_MEMBERS = sorted(m for members in RESOURCES.values() for m in members)
 
 with st.sidebar:
-    st.markdown("---")
+    st.markdown('<div class="sidebar-caption">Reporting Period</div>', unsafe_allow_html=True)
     today = date.today()
     default_start = today - timedelta(days=7)
 
-    start_date = st.date_input("📅 Start Date", value=default_start)
-    end_date = st.date_input("📅 End Date", value=today)
+    start_date = st.date_input("Start Date", value=default_start)
+    end_date = st.date_input("End Date", value=today)
 
+    st.markdown('<div class="sidebar-caption">Filters</div>', unsafe_allow_html=True)
     agencies_opt = ["All", "klem", "id36"]
-    selected_agency = st.selectbox("🏢 Agency", agencies_opt)
+    selected_agency = st.selectbox("Agency", agencies_opt)
 
-    with st.expander("More filters (optional)"):
+    with st.expander("More filters"):
         selected_studio = st.selectbox("Studio", ["All", "studio klem", "studio id36"])
         selected_client = st.text_input("Client (exact name)", value="")
         selected_member = st.selectbox("Member", ["All"] + ALL_MEMBERS)
@@ -338,8 +427,8 @@ with st.sidebar:
             "Status", ["All", "To do", "In progress", "Done", "In review", "Approved", "Not sure"]
         )
 
-    st.markdown("---")
-    view_mode = st.radio("📊 Display", ["Charts only", "Tables only"])
+    st.markdown('<div class="sidebar-caption">View</div>', unsafe_allow_html=True)
+    view_mode = st.radio("Display", ["Charts only", "Tables only"], label_visibility="collapsed")
 
     if start_date > end_date:
         st.error("Start Date must be before End Date.")
@@ -423,11 +512,21 @@ show_charts = view_mode == "Charts only"
 show_tables = view_mode == "Tables only"
 
 # ── HEADER ────────────────────────────────────────────────────
-st.markdown('<div class="page-title">📊 KPI Dashboard</div>', unsafe_allow_html=True)
+_logo_html = f'<img src="data:image/png;base64,{_LOGO_B64}" alt="KLEM Group" />' if _LOGO_B64 else ""
 st.markdown(
-    f"**Period:** {start_date} → {end_date} &nbsp;&nbsp;|&nbsp;&nbsp; "
-    f"**Agency:** {selected_agency} &nbsp;&nbsp;|&nbsp;&nbsp; "
-    f"**Cards loaded:** {len(raw_cards)}"
+    f"""
+<div class="app-header">
+    {_logo_html}
+    <div class="app-header-divider"></div>
+    <div>
+        <div class="app-header-title">Creative Operations Dashboard</div>
+        <div class="app-header-sub">
+            {start_date} — {end_date} &nbsp;·&nbsp; Agency: {selected_agency} &nbsp;·&nbsp; Cards loaded: {len(raw_cards)}
+        </div>
+    </div>
+</div>
+""",
+    unsafe_allow_html=True,
 )
 
 # ── METRIC CARDS ──────────────────────────────────────────────

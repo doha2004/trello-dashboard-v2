@@ -28,9 +28,12 @@ from services.mapper import map_cards_to_dataframe
 from services.trello_api import TrelloAPIError, cached_fetch_cards_in_range
 
 # ── BRAND ASSETS ───────────────────────────────────────────────
-# Logo lives right next to app.py (not in a subfolder).
+# Logo lives right next to app.py (not in a subfolder). The transparent
+# variant is used in the header so the (white-background) source logo
+# blends into the dark theme instead of showing a white box.
 APP_DIR = Path(__file__).parent
 LOGO_PATH = APP_DIR / "klem_group_logo.png"
+LOGO_TRANSPARENT_PATH = APP_DIR / "klem_group_logo_transparent.png"
 
 
 @st.cache_data(show_spinner=False)
@@ -40,6 +43,9 @@ def _load_logo_b64(path: str) -> str:
 
 
 _LOGO_B64 = _load_logo_b64(str(LOGO_PATH)) if LOGO_PATH.exists() else ""
+_LOGO_TRANSPARENT_B64 = (
+    _load_logo_b64(str(LOGO_TRANSPARENT_PATH)) if LOGO_TRANSPARENT_PATH.exists() else _LOGO_B64
+)
 
 # ── PAGE CONFIG ───────────────────────────────────────────────
 st.set_page_config(
@@ -49,35 +55,24 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── STYLES — enterprise / corporate theme ─────────────────────
+# ── STYLES — your original dark theme, restored ───────────────
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-:root {
-    --bg-app: #F4F5F7;
-    --bg-surface: #FFFFFF;
-    --bg-sidebar: #FFFFFF;
-    --border-color: #E2E4E9;
-    --text-primary: #1B1F27;
-    --text-secondary: #6B7280;
-    --accent: #9C7430;
-    --accent-soft: #F1E7D6;
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 html, body, [class*="css"] {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    background-color: var(--bg-app) !important;
-    color: var(--text-primary) !important;
+    font-family: 'DM Sans', sans-serif !important;
+    background-color: #0D1117 !important;
+    color: #C9D1D9 !important;
 }
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding: 2rem 3rem 3rem 3rem !important; max-width: 100% !important; }
+.block-container { padding: 2.5rem 4rem !important; max-width: 100% !important; }
 
 /* Sidebar */
 section[data-testid="stSidebar"] {
-    background: var(--bg-sidebar) !important;
-    border-right: 1px solid var(--border-color) !important;
+    background: #161B22 !important;
+    border-right: 1px solid #21262D !important;
 }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
@@ -89,37 +84,32 @@ section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span,
 section[data-testid="stSidebar"] .stMarkdown {
-    color: var(--text-primary) !important;
+    color: #FFFFFF !important;
     opacity: 1 !important;
 }
 section[data-testid="stSidebar"] div[data-testid="stWidgetLabel"] > label {
-    color: var(--text-secondary) !important;
-    font-weight: 600 !important;
+    color: #8B949E !important;
+    font-weight: 700 !important;
     font-size: 0.8rem !important;
     text-transform: uppercase;
     letter-spacing: 0.4px;
     opacity: 1 !important;
 }
 section[data-testid="stSidebar"] div[role="radiogroup"] label {
-    color: var(--text-primary) !important;
+    color: #FFFFFF !important;
     opacity: 1 !important;
 }
 section[data-testid="stSidebar"] div[role="radiogroup"] label p {
-    color: var(--text-primary) !important;
-    font-weight: 500 !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
     opacity: 1 !important;
-}
-section[data-testid="stSidebar"] .stTextInput input,
-section[data-testid="stSidebar"] .stDateInput input,
-section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
-    border-radius: 6px !important;
 }
 .sidebar-caption {
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;
-    color: var(--text-secondary);
+    color: #8B949E;
     margin: 1.4rem 0 0.4rem 0;
 }
 
@@ -130,87 +120,75 @@ section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
     gap: 1rem;
     padding-bottom: 1.2rem;
     margin-bottom: 1.6rem;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #21262D;
 }
 .app-header img {
-    height: 34px;
+    height: 38px;
     width: auto;
 }
 .app-header-divider {
     width: 1px;
-    height: 28px;
-    background: var(--border-color);
+    height: 30px;
+    background: #21262D;
 }
 .app-header-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #58A6FF 0%, #BC8CFF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     letter-spacing: -0.2px;
 }
 .app-header-sub {
-    font-size: 0.82rem;
-    color: var(--text-secondary);
-    margin-top: 0.15rem;
+    font-size: 0.85rem;
+    color: #8B949E;
+    margin-top: 0.2rem;
 }
 
 /* Metric cards */
 .metric-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 1.2rem 1.4rem;
+    background: #161B22;
+    border: 1px solid #21262D;
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
 }
 .metric-label {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
-    color: var(--text-secondary);
+    color: #8B949E;
 }
 .metric-value {
-    font-size: 2.4rem;
-    font-weight: 700;
-    font-family: 'Inter', sans-serif;
-    color: var(--text-primary);
-    margin-top: 0.15rem;
+    font-size: 3.4rem;
+    font-weight: 800;
+    font-family: 'DM Mono', monospace;
+    color: #FFFFFF;
 }
 .metric-sub {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    margin-top: 0.15rem;
+    font-size: 0.85rem;
+    color: #8B949E;
+    margin-top: 0.2rem;
 }
 
 /* Section headers */
 .section-title {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text-secondary);
-    margin: 2.2rem 0 0.9rem 0;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
+    letter-spacing: 1.5px;
+    color: #8B949E;
+    margin: 2.5rem 0 1rem 0;
+    border-bottom: 1px solid #21262D;
+    padding-bottom: 0.4rem;
 }
 
-/* Charts */
+/* Charts stay on white cards for readability of the colorful palette */
 div[data-testid="stPlotlyChart"] {
-    background: var(--bg-surface) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 10px !important;
-    padding: 12px 14px 8px 14px !important;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05) !important;
-}
-
-/* Tables */
-div[data-testid="stDataFrame"] {
-    border: 1px solid var(--border-color) !important;
-    border-radius: 10px !important;
-}
-
-/* Buttons / inputs */
-.stButton > button, .stDownloadButton > button {
-    border-radius: 6px !important;
-    font-weight: 600 !important;
+    background: #FFFFFF !important;
+    border: 1px solid #D0D7DE !important;
+    border-radius: 14px !important;
+    padding: 10px 10px 4px 10px !important;
+    box-shadow: 5px 6px 0px rgba(0, 0, 0, 0.65) !important;
 }
 </style>
 """,
@@ -221,13 +199,13 @@ div[data-testid="stDataFrame"] {
 CHART_LAYOUT = dict(
     paper_bgcolor="#FFFFFF",
     plot_bgcolor="#FFFFFF",
-    font=dict(family="Inter", color="#1B1F27", size=12),
+    font=dict(family="DM Sans", color="#111111", size=12),
     margin=dict(l=20, r=20, t=40, b=20),
-    legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E4E9", borderwidth=1, font=dict(color="#1B1F27")),
-    xaxis=dict(gridcolor="#EEF0F3", zerolinecolor="#E2E4E9", linecolor="#D3D7DE",
-               tickfont=dict(color="#1B1F27"), title_font=dict(color="#1B1F27")),
-    yaxis=dict(gridcolor="#EEF0F3", zerolinecolor="#E2E4E9", linecolor="#D3D7DE",
-               tickfont=dict(color="#1B1F27"), title_font=dict(color="#1B1F27")),
+    legend=dict(bgcolor="#FFFFFF", bordercolor="#D0D7DE", borderwidth=1, font=dict(color="#111111")),
+    xaxis=dict(gridcolor="#E5E7EB", zerolinecolor="#D0D7DE", linecolor="#B8C0CC",
+               tickfont=dict(color="#111111"), title_font=dict(color="#111111")),
+    yaxis=dict(gridcolor="#E5E7EB", zerolinecolor="#D0D7DE", linecolor="#B8C0CC",
+               tickfont=dict(color="#111111"), title_font=dict(color="#111111")),
 )
 
 USER_COLOR_LIST = [
@@ -513,7 +491,11 @@ show_charts = view_mode == "Charts only"
 show_tables = view_mode == "Tables only"
 
 # ── HEADER ────────────────────────────────────────────────────
-_logo_html = f'<img src="data:image/png;base64,{_LOGO_B64}" alt="KLEM Group" />' if _LOGO_B64 else ""
+_logo_html = (
+    f'<img src="data:image/png;base64,{_LOGO_TRANSPARENT_B64}" alt="KLEM Group" />'
+    if _LOGO_TRANSPARENT_B64
+    else ""
+)
 _header_sub = (
     f"{start_date} — {end_date} &nbsp;&middot;&nbsp; "
     f"Agency: {selected_agency} &nbsp;&middot;&nbsp; "
@@ -535,7 +517,7 @@ _header_html = (
 )
 st.markdown(_header_html, unsafe_allow_html=True)
 
-if not _LOGO_B64:
+if not _LOGO_TRANSPARENT_B64:
     st.caption(
         "Logo not found — make sure klem_group_logo.png sits in the same folder as app.py."
     )

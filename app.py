@@ -156,17 +156,43 @@ div[data-testid="stPlotlyChart"] {
     height: 34px;
     width: auto;
 }
-    /* Fix white/invisible dates */
-div[data-testid="stDateInput"] label,
-div[data-testid="stDateInput"] input,
-div[data-testid="stDateInput"] button,
-div[data-testid="stDateInput"] svg {
+/* DATE INPUT: Make actual date numbers visible */
+div[data-testid="stDateInput"] input {
+    background-color: #FFFFFF !important;
+    color: #1B1F27 !important;
+    -webkit-text-fill-color: #1B1F27 !important;
+    font-weight: 500 !important;
+}
+
+/* CALENDAR POPUP: Improve date and background contrast */
+div[data-baseweb="calendar"] {
+    background-color: #FFFFFF !important;
     color: #1B1F27 !important;
 }
 
-div[data-testid="stDateInput"] input {
+div[data-baseweb="calendar"] * {
+    color: #1B1F27 !important;
+}
+
+div[data-baseweb="calendar"] button {
     background-color: #FFFFFF !important;
-    -webkit-text-fill-color: #1B1F27 !important;
+    color: #1B1F27 !important;
+}
+
+/* Calendar hover and selected dates */
+div[data-baseweb="calendar"] button:hover {
+    background-color: #E8EAF0 !important;
+}
+
+div[data-baseweb="calendar"] button[aria-selected="true"] {
+    background-color: #9C7430 !important;
+    color: #FFFFFF !important;
+}
+
+/* PASSWORD: Make helper instructions visible */
+div[data-testid="stTextInput"] small,
+div[data-testid="stTextInput"] [data-testid="InputInstructions"] {
+    color: #6B7280 !important;
 }
 
 /* Fix sidebar warning and alert text */

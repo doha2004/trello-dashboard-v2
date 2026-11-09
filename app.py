@@ -156,45 +156,74 @@ div[data-testid="stPlotlyChart"] {
     height: 34px;
     width: auto;
 }
-/* DATE INPUT: Force date values to dark text */
-div[data-testid="stDateInput"] input {
-    background: #FFFFFF !important;
+
+/* =====================================
+   DATE INPUT - MAKE DATE NUMBERS VISIBLE
+   ===================================== */
+
+div[data-testid="stDateInput"] input,
+div[data-testid="stDateInput"] [data-baseweb="input"] input {
+    background-color: #FFFFFF !important;
     color: #1B1F27 !important;
     -webkit-text-fill-color: #1B1F27 !important;
     opacity: 1 !important;
     font-weight: 600 !important;
+    caret-color: #1B1F27 !important;
 }
 
-/* Date input container */
 div[data-testid="stDateInput"] [data-baseweb="input"] {
-    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
 }
 
-/* CALENDAR POPUP */
-div[data-baseweb="popover"] {
-    background: #FFFFFF !important;
+div[data-testid="stDateInput"] [data-baseweb="input"] > div,
+div[data-testid="stDateInput"] [data-baseweb="input"] > div * {
+    background-color: #FFFFFF !important;
+    color: #1B1F27 !important;
+    -webkit-text-fill-color: #1B1F27 !important;
 }
 
+/* =====================================
+   CALENDAR POPUP
+   ===================================== */
+
+div[data-baseweb="popover"],
 div[data-baseweb="calendar"] {
-    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
     color: #1B1F27 !important;
 }
 
-div[data-baseweb="calendar"] button {
+div[data-baseweb="calendar"] button,
+div[data-baseweb="calendar"] button span {
     color: #1B1F27 !important;
 }
 
-/* PASSWORD INSTRUCTIONS */
+div[data-baseweb="calendar"] button:hover {
+    background-color: #E8EAF0 !important;
+}
+
+/* =====================================
+   PASSWORD - MOVE INSTRUCTIONS BELOW
+   ===================================== */
+
 div[data-testid="stTextInput"] input {
     color: #1B1F27 !important;
     -webkit-text-fill-color: #1B1F27 !important;
 }
 
-div[data-testid="stTextInput"] [data-testid="InputInstructions"],
-div[data-testid="stTextInput"] small {
-    color: #1B1F27 !important;
-    -webkit-text-fill-color: #1B1F27 !important;
+div[data-testid="stTextInput"] [data-testid="InputInstructions"] {
+    display: block !important;
+    position: static !important;
+    margin-top: 8px !important;
+    padding-left: 2px !important;
+    color: #6B7280 !important;
+    -webkit-text-fill-color: #6B7280 !important;
+    line-height: 1.4 !important;
     opacity: 1 !important;
+}
+
+div[data-testid="stTextInput"] small {
+    color: #6B7280 !important;
+    -webkit-text-fill-color: #6B7280 !important;
 }
 
 /* Fix sidebar warning and alert text */

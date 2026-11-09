@@ -156,6 +156,25 @@ div[data-testid="stPlotlyChart"] {
     height: 34px;
     width: auto;
 }
+    /* Fix white/invisible dates */
+div[data-testid="stDateInput"] label,
+div[data-testid="stDateInput"] input,
+div[data-testid="stDateInput"] button,
+div[data-testid="stDateInput"] svg {
+    color: #1B1F27 !important;
+}
+
+div[data-testid="stDateInput"] input {
+    background-color: #FFFFFF !important;
+    -webkit-text-fill-color: #1B1F27 !important;
+}
+
+/* Fix sidebar warning and alert text */
+section[data-testid="stSidebar"] [data-testid="stAlert"] * {
+    color: #1B1F27 !important;
+    opacity: 1 !important;
+    
+}
 </style>
 """,
     unsafe_allow_html=True,

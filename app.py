@@ -156,43 +156,45 @@ div[data-testid="stPlotlyChart"] {
     height: 34px;
     width: auto;
 }
-/* DATE INPUT: Make actual date numbers visible */
+/* DATE INPUT: Force date values to dark text */
 div[data-testid="stDateInput"] input {
-    background-color: #FFFFFF !important;
+    background: #FFFFFF !important;
     color: #1B1F27 !important;
     -webkit-text-fill-color: #1B1F27 !important;
-    font-weight: 500 !important;
+    opacity: 1 !important;
+    font-weight: 600 !important;
 }
 
-/* CALENDAR POPUP: Improve date and background contrast */
+/* Date input container */
+div[data-testid="stDateInput"] [data-baseweb="input"] {
+    background: #FFFFFF !important;
+}
+
+/* CALENDAR POPUP */
+div[data-baseweb="popover"] {
+    background: #FFFFFF !important;
+}
+
 div[data-baseweb="calendar"] {
-    background-color: #FFFFFF !important;
-    color: #1B1F27 !important;
-}
-
-div[data-baseweb="calendar"] * {
+    background: #FFFFFF !important;
     color: #1B1F27 !important;
 }
 
 div[data-baseweb="calendar"] button {
-    background-color: #FFFFFF !important;
     color: #1B1F27 !important;
 }
 
-/* Calendar hover and selected dates */
-div[data-baseweb="calendar"] button:hover {
-    background-color: #E8EAF0 !important;
+/* PASSWORD INSTRUCTIONS */
+div[data-testid="stTextInput"] input {
+    color: #1B1F27 !important;
+    -webkit-text-fill-color: #1B1F27 !important;
 }
 
-div[data-baseweb="calendar"] button[aria-selected="true"] {
-    background-color: #9C7430 !important;
-    color: #FFFFFF !important;
-}
-
-/* PASSWORD: Make helper instructions visible */
-div[data-testid="stTextInput"] small,
-div[data-testid="stTextInput"] [data-testid="InputInstructions"] {
-    color: #6B7280 !important;
+div[data-testid="stTextInput"] [data-testid="InputInstructions"],
+div[data-testid="stTextInput"] small {
+    color: #1B1F27 !important;
+    -webkit-text-fill-color: #1B1F27 !important;
+    opacity: 1 !important;
 }
 
 /* Fix sidebar warning and alert text */
